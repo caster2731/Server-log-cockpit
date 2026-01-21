@@ -200,9 +200,10 @@ function applyLanguage() {
 // ========================
 // Analysis Logic
 // ========================
-async function startAnalysis() {
-    // If live monitor is on, turn it off first to avoid conflicts
-    if (document.getElementById('liveMonitor').checked) {
+async function startAnalysis(silent = false) {
+    // If live monitor is on, turn it off first to avoid conflicts (ONLY if explicit manual analysis)
+    // But if silent (auto-refresh), we don't want to turn off live monitor.
+    if (!silent && document.getElementById('liveMonitor').checked) {
         document.getElementById('liveMonitor').click();
     }
 
@@ -216,8 +217,11 @@ async function startAnalysis() {
     const dashboard = document.getElementById('dashboard');
     const loader = document.getElementById('loader');
 
-    dashboard.classList.add('hidden');
-    loader.classList.remove('hidden');
+    // Only show loader if not silent
+    if (!silent) {
+        dashboard.classList.add('hidden');
+        loader.classList.remove('hidden');
+    }
 
     try {
         const response = await fetch('/api/analyze', {
@@ -235,16 +239,23 @@ async function startAnalysis() {
 
         if (response.ok) {
             updateDashboard(data);
-            loader.classList.add('hidden');
-            dashboard.classList.remove('hidden');
+            if (!silent) {
+                loader.classList.add('hidden');
+                dashboard.classList.remove('hidden');
+            }
         } else {
-            alert('Error: ' + data.error);
-            loader.classList.add('hidden');
+            console.error('Analysis error: ' + data.error);
+            if (!silent) {
+                alert('Error: ' + data.error);
+                loader.classList.add('hidden');
+            }
         }
     } catch (e) {
-        alert('Network or Server Error');
-        console.error(e);
-        loader.classList.add('hidden');
+        console.error('Network or Server Error', e);
+        if (!silent) {
+            alert('Network or Server Error');
+            loader.classList.add('hidden');
+        }
     }
 }
 
@@ -576,6 +587,10 @@ async function pollLog() {
                     container.lastChild.remove();
                 }
             });
+
+            // New lines detected, trigger silent dashboard update
+            // Debounce or just call it? calling it every 2s is fine for local.
+            startAnalysis(true);
         }
     } catch (e) {
         console.error('Polling error', e);
