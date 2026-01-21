@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nginx Log Cockpit</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="glass-header">
+            <div class="logo">
+                <i class="fa-solid fa-chart-radar"></i>
+                <h1>SERVER LOG <span class="highlight">COCKPIT</span></h1>
+            </div>
+
+            <div class="controls-area">
+                <!-- Live Monitor -->
+                <div class="toggle-container live-toggle">
+                    <label class="switch">
+                        <input type="checkbox" id="liveMonitor" onchange="toggleLiveMonitor()">
+                        <span class="slider round"></span>
+                    </label>
+                    <span id="lbl-live" class="live-label"><i class="fa-solid fa-circle fa-beat-fade"></i> LIVE</span>
+                </div>
+
+                <!-- Bot Filter -->
+                <div class="toggle-container">
+                    <label class="switch">
+                        <input type="checkbox" id="botFilter">
+                        <span class="slider round"></span>
+                    </label>
+                    <span id="lbl-exclude-bots">Exclude Bots</span>
+                </div>
+
+                <div class="input-group">
+                    <input type="text" id="logPath" placeholder="D:/path/to/access.log"
+                        value="d:/Myapp/access_analyzer/access.log">
+                    <button class="file-btn" onclick="openFileBrowser()"><i
+                            class="fa-regular fa-folder-open"></i></button>
+                    <button id="analyzeBtn" onclick="startAnalysis()">
+                        <i class="fa-solid fa-bolt"></i> <span id="btn-analyze">ANALYZE</span>
+                    </button>
+                </div>
+
+                <!-- Language Toggle -->
+                <button class="lang-btn" onclick="toggleLanguage()">
+                    <i class="fa-solid fa-language"></i> <span id="current-lang">JP</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Live Terminal -->
+        <section id="live-terminal" class="terminal-container hidden">
+            <div class="terminal-header">
+                <span><i class="fa-solid fa-terminal"></i> Live Monitoring: <span
+                        id="live-filename">access.log</span></span>
+                <button class="clear-btn" onclick="clearTerminal()"><i class="fa-solid fa-eraser"></i></button>
+            </div>
+            <div id="terminal-content" class="terminal-content">
+                <div class="terminal-line system-msg"> Waiting for new logs...</div>
+            </div>
+        </section>
+
+        <!-- Main Dashboard -->
+        <main id="dashboard" class="hidden">
+            <!-- Summary Stats -->
+            <section class="summary-grid">
+                <div class="card stat-card">
+                    <div class="icon"><i class="fa-solid fa-globe"></i></div>
+                    <div class="info">
+                        <h3 id="h-pv">Total Requests</h3>
+                        <p class="value" id="val-pv">-</p>
+                    </div>
+                </div>
+                <div class="card stat-card">
+                    <div class="icon"><i class="fa-solid fa-users"></i></div>
+                    <div class="info">
+                        <h3 id="h-uu">Unique Visitors</h3>
+                        <p class="value" id="val-uu">-</p>
+                    </div>
+                </div>
+                <div class="card stat-card">
+                    <div class="icon"><i class="fa-solid fa-server"></i></div>
+                    <div class="info">
+                        <h3 id="h-transfer">Data Transfer</h3>
+                        <p class="value" id="val-bytes">-</p>
+                    </div>
+                </div>
+                <div class="card stat-card">
+                    <div class="icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div class="info">
+                        <h3 id="h-error">Error Rate (4xx/5xx)</h3>
+                        <p class="value" id="val-error">-</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Row -->
+            <section class="charts-grid">
+                <div class="card chart-card wide">
+                    <h3><i class="fa-regular fa-clock"></i> <span id="t-hourly">Hourly Traffic</span></h3>
+                    <div class="chart-container">
+                        <canvas id="hourlyChart"></canvas>
+                    </div>
+                </div>
+                <div class="card chart-card">
+                    <h3><i class="fa-solid fa-chart-pie"></i> <span id="t-status">Status Codes</span></h3>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Lists Grid -->
+            <section class="lists-grid">
+                <!-- Top IPs -->
+                <div class="card list-card">
+                    <h3>
+                        <i class="fa-solid fa-network-wired"></i> <span id="t-ips">Top Clients (IPs)</span>
+                        <button id="resolveAllBtn" class="action-btn" onclick="resolveAllDNS()"
+                            style="margin-left: auto; font-size: 0.8rem; padding: 5px 10px;">
+                            <i class="fa-solid fa-bolt"></i> <span id="btn-resolve">Resolve All</span>
+                        </button>
+                    </h3>
+                    <div class="table-wrapper">
+                        <table id="ipTable">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>IP Address</th>
+                                    <th>Reqs</th>
+                                    <th>Info (DNS/Geo)</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Top Paths -->
+                <div class="card list-card">
+                    <h3><i class="fa-solid fa-folder-tree"></i> <span id="t-paths">Top Requests</span></h3>
+                    <div class="table-wrapper">
+                        <table id="pathTable">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Path</th>
+                                    <th>Reqs</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- User Agents -->
+                <div class="card list-card">
+                    <h3><i class="fa-solid fa-robot"></i> <span id="t-uas">Top User Agents</span></h3>
+                    <div class="table-wrapper">
+                        <table id="uaTable">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>User Agent</th>
+                                    <th>Reqs</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Referers -->
+                <div class="card list-card">
+                    <h3><i class="fa-solid fa-link"></i> <span id="t-refs">Top Referers</span></h3>
+                    <div class="table-wrapper">
+                        <table id="refTable">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Referer</th>
+                                    <th>Reqs</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <div id="loader" class="loader hidden">
+            <div class="spinner"></div>
+            <p id="msg-processing">Processing Logs...</p>
+        </div>
+    </div>
+
+    <!-- File Browser Modal -->
+    <div id="fileBrowser" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Select Log File</h3>
+                <span class="close" onclick="closeFileBrowser()">&times;</span>
+            </div>
+            <div class="browser-nav">
+                <button onclick="navigateUp()"><i class="fa-solid fa-arrow-up"></i> Up</button>
+                <span id="currentPath" class="path-display">D:/</span>
+            </div>
+            <div id="fileList" class="file-list">
+                <!-- Populated via JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
