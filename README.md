@@ -49,7 +49,7 @@ It visualizes your server traffic in real-time with a premium "Cyber/Glassmorphi
 
 2. Open your browser and navigate to:
    ```
-   http://127.0.0.1:5000
+   http://127.0.0.1:8989
    ```
 
 3. Enter the path to your Nginx access log (or use the file picker folder icon) and click **ANALYZE**.
@@ -98,7 +98,7 @@ Server Log Cockpit は、モダンなWebベースのNginxアクセスログ解�
 
 2. ブラウザでアクセス:
    ```
-   http://127.0.0.1:5000
+   http://127.0.0.1:8989
    ```
 
 3. 解析したいNginxアクセスログのパスを入力するか、フォルダアイコンをクリックしてファイルを選択し、**ANALYZE** をクリックしてください。
