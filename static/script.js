@@ -77,6 +77,51 @@ const translations = {
     }
 };
 
+// Theme Logic
+let currentTheme = 'dark'; // Default
+
+function toggleTheme() {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+
+    // Update Icon
+    const icon = document.getElementById('theme-icon');
+    if (icon) {
+        if (currentTheme === 'light') {
+            icon.className = 'fa-solid fa-moon';
+        } else {
+            icon.className = 'fa-solid fa-sun';
+        }
+    }
+
+    // Update Charts colors
+    updateChartTheme();
+}
+
+function updateChartTheme() {
+    const isDark = currentTheme === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+    const textColor = isDark ? '#e6edf3' : '#24292f';
+
+    if (hourlyChartInstance) {
+        if (hourlyChartInstance.options.scales.x) hourlyChartInstance.options.scales.x.grid.color = gridColor;
+        if (hourlyChartInstance.options.scales.y) hourlyChartInstance.options.scales.y.grid.color = gridColor;
+        if (hourlyChartInstance.options.scales.x) hourlyChartInstance.options.scales.x.ticks.color = textColor;
+        if (hourlyChartInstance.options.scales.y) hourlyChartInstance.options.scales.y.ticks.color = textColor;
+        hourlyChartInstance.update();
+    }
+
+    if (statusChartInstance) {
+        if (statusChartInstance.options.plugins.legend) statusChartInstance.options.plugins.legend.labels.color = textColor;
+        statusChartInstance.update();
+    }
+
+    if (threatChartInstance) {
+        if (threatChartInstance.options.plugins.legend) threatChartInstance.options.plugins.legend.labels.color = textColor;
+        threatChartInstance.update();
+    }
+}
+
 let currentLang = 'jp'; // Default to JP as per user preference
 
 function toggleLanguage() {
@@ -395,6 +440,10 @@ function updateCharts(data) {
     const t = translations[currentLang];
     const hours = Object.keys(data.hourly_stats);
     const hourCounts = Object.values(data.hourly_stats);
+    const isDark = currentTheme === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+    const textColor = isDark ? '#e6edf3' : '#24292f';
+
     const ctxHourly = document.getElementById('hourlyChart').getContext('2d');
     if (hourlyChartInstance) hourlyChartInstance.destroy();
     hourlyChartInstance = new Chart(ctxHourly, {
@@ -416,8 +465,8 @@ function updateCharts(data) {
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                y: { grid: { color: 'rgba(255,255,255,0.05)' } },
-                x: { grid: { color: 'rgba(255,255,255,0.05)' } }
+                y: { grid: { color: gridColor }, ticks: { color: textColor } },
+                x: { grid: { color: gridColor }, ticks: { color: textColor } }
             }
         }
     });
@@ -443,7 +492,7 @@ function updateCharts(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { position: 'right', labels: { color: '#e6edf3' } } }
+            plugins: { legend: { position: 'right', labels: { color: textColor } } }
         }
     });
 }

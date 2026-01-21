@@ -11,6 +11,23 @@
     --accent-success: #238636;
     --accent-danger: #f85149;
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --input-bg: rgba(0, 0, 0, 0.3);
+    --chart-grid: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="light"] {
+    --bg-color: #f6f8fa;
+    --card-bg: rgba(255, 255, 255, 0.85);
+    --card-border: rgba(208, 215, 222, 0.8);
+    --text-primary: #24292f;
+    --text-secondary: #57606a;
+    --accent-primary: #0969da;
+    --accent-secondary: #8250df;
+    --accent-success: #1a7f37;
+    --accent-danger: #cf222e;
+    --glass-shadow: 0 4px 12px rgba(27, 31, 35, 0.15);
+    --input-bg: rgba(255, 255, 255, 1);
+    --chart-grid: rgba(0, 0, 0, 0.05);
 }
 
 * {
@@ -24,9 +41,19 @@ body {
     background-color: var(--bg-color);
     color: var(--text-primary);
     background-image:
-        radial-gradient(circle at 10% 20%, rgba(47, 129, 247, 0.1) 0%, transparent 20%),
-        radial-gradient(circle at 90% 80%, rgba(163, 113, 247, 0.1) 0%, transparent 20%);
+        radial-gradient(circle at 10% 20%, var(--accent-primary) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, var(--accent-secondary) 0%, transparent 20%);
+    background-size: 100% 100%;
+    backdrop-filter: blur(100px);
+    /* Enhance glass effect heavily */
     min-height: 100vh;
+}
+
+[data-theme="light"] body {
+    /* Lighter gradient opacity for light mode */
+    background-image:
+        radial-gradient(circle at 10% 20%, rgba(9, 105, 218, 0.05) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(130, 80, 223, 0.05) 0%, transparent 20%);
 }
 
 .app-container {
@@ -83,7 +110,7 @@ body {
 }
 
 input[type="text"] {
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--input-bg);
     border: 1px solid var(--card-border);
     color: var(--text-primary);
     padding: 10px 15px;
@@ -544,6 +571,7 @@ tr:hover td {
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
 }
+
 /* Date Inputs */
 .date-group {
     display: flex;
@@ -560,7 +588,8 @@ tr:hover td {
     border-radius: 6px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.8rem;
-    color-scheme: dark; /* Dark calendar picker */
+    color-scheme: dark;
+    /* Dark calendar picker */
 }
 
 /* Wide Modal */
@@ -577,7 +606,8 @@ tr:hover td {
 }
 
 #journeyTable th {
-    top: -20px; /* Adjust for padding */
+    top: -20px;
+    /* Adjust for padding */
 }
 
 /* Threat Table */
@@ -605,7 +635,7 @@ tr:hover td {
     text-decoration: underline;
     text-decoration-style: dotted;
 }
+
 .highlight-ip:hover {
     color: white;
 }
-
