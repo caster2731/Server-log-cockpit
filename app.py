@@ -130,5 +130,27 @@ def dns_lookup():
     except Exception as e:
         return jsonify({'ip': ip, 'hostname': f'Error: {str(e)}'})
 
+@app.route('/api/choose_file', methods=['POST'])
+def choose_file():
+    import subprocess
+    # PowerShell command to open standard Windows File Dialog
+    cmd = """powershell -command "Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.OpenFileDialog; $f.Filter = 'Log files (*.log)|*.log|All files (*.*)|*.*'; $f.Title = 'Select Access Log'; if($f.ShowDialog() -eq 'OK'){ $f.FileName }" """
+    
+    try:
+        # Run PowerShell command, hiding the window
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo)
+        path = result.stdout.strip()
+        
+        if path:
+            return jsonify({'path': path})
+        else:
+            return jsonify({'path': None}) # Cancelled
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=8989)

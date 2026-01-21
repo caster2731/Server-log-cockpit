@@ -320,16 +320,34 @@ function clearTerminal() {
 }
 
 // ========================
-// File Browser Logic
+// File Browser Logic (Native Dialog)
 // ========================
-const fileBrowserModal = document.getElementById('fileBrowser');
+async function openFileBrowser() {
+    const btn = document.querySelector('.file-btn');
+    const origIcon = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    btn.disabled = true;
 
-function openFileBrowser() {
-    fileBrowserModal.classList.remove('hidden');
-    // Load current path or D:/
-    let current = document.getElementById('logPath').value;
-    loadDirectory(current || 'd:/');
+    try {
+        const response = await fetch('/api/choose_file', { method: 'POST' });
+        const data = await response.json();
+
+        if (data.path) {
+            document.getElementById('logPath').value = data.path;
+        }
+    } catch (e) {
+        alert('Failed to open dialog');
+    } finally {
+        btn.innerHTML = origIcon;
+        btn.disabled = false;
+    }
 }
+
+/* 
+// Deprecated Custom Browser Code
+const fileBrowserModal = document.getElementById('fileBrowser');
+...
+*/
 
 function closeFileBrowser() {
     fileBrowserModal.classList.add('hidden');
