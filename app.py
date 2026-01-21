@@ -133,15 +133,43 @@ def dns_lookup():
 @app.route('/api/choose_file', methods=['POST'])
 def choose_file():
     import subprocess
-    # PowerShell command to open standard Windows File Dialog
-    cmd = """powershell -command "Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.OpenFileDialog; $f.Filter = 'Log files (*.log)|*.log|All files (*.*)|*.*'; $f.Title = 'Select Access Log'; if($f.ShowDialog() -eq 'OK'){ $f.FileName }" """
+    import sys
+    
+    # Python script to open file dialog using Tkinter (runs in separate process)
+    # properly handles TopMost focus
+    script = """
+import tkinter as tk
+from tkinter import filedialog
+import os
+
+try:
+    root = tk.Tk()
+    root.withdraw() # Hide the main window
+    root.attributes('-topmost', True) # Force to top
+    root.lift()
+    root.focus_force()
+    
+    file_path = filedialog.askopenfilename(
+        title="Select Access Log",
+        filetypes=[("Log files", "*.log"), ("All files", "*.*")]
+    )
+    
+    if file_path:
+        print(file_path)
+except Exception:
+    pass
+"""
     
     try:
-        # Run PowerShell command, hiding the window
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        # Run the python script in a subprocess
+        # Using sys.executable to ensure we use the same python interpreter
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True,
+            text=True,
+            check=False
+        )
         
-        result = subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo)
         path = result.stdout.strip()
         
         if path:
