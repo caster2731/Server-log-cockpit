@@ -10,6 +10,12 @@ const translations = {
         uu: 'Unique Visitors',
         transfer: 'Data Transfer',
         error: 'Error Rate (4xx/5xx)',
+        security: 'Security Threats',
+        threats: 'Detected Threats',
+        threatDist: 'Threat Distribution',
+        journey: 'User Journey',
+        safe: 'Safe',
+        threatCount: 'Threats!',
         hourly: 'Hourly Traffic',
         status: 'Status Codes',
         ips: 'Top Clients (IPs)',
@@ -24,13 +30,27 @@ const translations = {
         analyzing: 'Analyzing...',
         requests: 'Requests',
         live: 'LIVE',
-        waiting: 'Waiting for new logs...'
+        waiting: 'Waiting for new logs...',
+        // Table Headers
+        time: 'Time',
+        ip: 'IP',
+        type: 'Type',
+        risk: 'Risk',
+        evidence: 'Evidence',
+        method: 'Method/Path',
+        refUa: 'Ref/UA'
     },
     jp: {
         pv: '総リクエスト (PV)',
         uu: 'ユニーク訪問者 (UU)',
         transfer: '転送量合計',
         error: 'エラー率 (4xx/5xx)',
+        security: 'セキュリティ脅威',
+        threats: '検知された脅威',
+        threatDist: '脅威の内訳',
+        journey: 'ユーザー行動履歴 (Journey)',
+        safe: '安全',
+        threatCount: '件の脅威！',
         hourly: '時間帯別アクセス',
         status: 'ステータスコード',
         ips: 'クライアント (IP) Top',
@@ -45,7 +65,15 @@ const translations = {
         analyzing: '解析中...',
         requests: '件数',
         live: 'ライブ',
-        waiting: '新しいログを待機中...'
+        waiting: '新しいログを待機中...',
+        // Table Headers
+        time: '時刻',
+        ip: 'IPアドレス',
+        type: '種類',
+        risk: '危険度',
+        evidence: '証拠/ペイロード',
+        method: 'メソッド/パス',
+        refUa: 'リファラー/UA'
     }
 };
 
@@ -66,6 +94,35 @@ function applyLanguage() {
     document.getElementById('h-uu').textContent = t.uu;
     document.getElementById('h-transfer').textContent = t.transfer;
     document.getElementById('h-error').textContent = t.error;
+    document.getElementById('h-security').textContent = t.security;
+
+    // New Features Headers
+    const tThreats = document.getElementById('t-threats');
+    if (tThreats) tThreats.textContent = t.threats;
+
+    const tThreatDist = document.getElementById('t-threat-dist');
+    if (tThreatDist) tThreatDist.textContent = t.threatDist;
+
+    const tJourney = document.getElementById('t-journey');
+    if (tJourney) tJourney.textContent = t.journey;
+
+    // Table Headers (Threats)
+    if (document.getElementById('th-t-time')) {
+        document.getElementById('th-t-time').textContent = t.time;
+        document.getElementById('th-t-ip').textContent = t.ip;
+        document.getElementById('th-t-type').textContent = t.type;
+        document.getElementById('th-t-risk').textContent = t.risk;
+        document.getElementById('th-t-evidence').textContent = t.evidence;
+    }
+    // Table Headers (Journey)
+    if (document.getElementById('th-j-time')) {
+        document.getElementById('th-j-time').textContent = t.time;
+        document.getElementById('th-j-method').textContent = t.method;
+        // Status is shared/universal enough? Or use 'status' key
+        document.getElementById('th-j-status').textContent = t.status; // Using global status key
+        document.getElementById('th-j-ref').textContent = t.refUa;
+    }
+
     document.getElementById('t-hourly').textContent = t.hourly;
     document.getElementById('t-status').textContent = t.status;
     document.getElementById('t-ips').textContent = t.ips;
@@ -73,11 +130,25 @@ function applyLanguage() {
     document.getElementById('t-uas').textContent = t.uas;
     document.getElementById('t-refs').textContent = t.refs;
     document.getElementById('btn-resolve').textContent = t.resolve;
-    // document.getElementById('lbl-live').innerHTML = `<i class="fa-solid fa-circle fa-beat-fade"></i> ${t.live}`;
 
     if (hourlyChartInstance) {
         hourlyChartInstance.data.datasets[0].label = t.requests;
         hourlyChartInstance.update();
+    }
+
+    // Update Security Card Text if it's currently showing something
+    const secVal = document.getElementById('val-security');
+    if (secVal) {
+        // Simple logic: if contains '!', it's threats, else safe
+        // But better to store state or just leave it for re-analysis?
+        // Let's check color for check
+        if (secVal.style.color === 'var(--accent-success)' || secVal.textContent === 'Safe' || secVal.textContent === '安全') {
+            secVal.textContent = t.safe;
+        } else if (secVal.textContent.includes('Threats') || secVal.textContent.includes('脅威')) {
+            // Keep number
+            const num = parseInt(secVal.textContent) || 0;
+            secVal.textContent = currentLang === 'en' ? `${num} Threats!` : `${num}${t.threatCount}`;
+        }
     }
 }
 
@@ -92,6 +163,11 @@ async function startAnalysis() {
 
     const path = document.getElementById('logPath').value;
     const filterBots = document.getElementById('botFilter').checked;
+
+    // Date Params
+    const dateStart = document.getElementById('dateStart').value;
+    const dateEnd = document.getElementById('dateEnd').value;
+
     const dashboard = document.getElementById('dashboard');
     const loader = document.getElementById('loader');
 
@@ -102,7 +178,12 @@ async function startAnalysis() {
         const response = await fetch('/api/analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filepath: path, filter_bots: filterBots })
+            body: JSON.stringify({
+                filepath: path,
+                filter_bots: filterBots,
+                start_date: dateStart,
+                end_date: dateEnd
+            })
         });
 
         const data = await response.json();
@@ -137,6 +218,43 @@ function updateDashboard(data) {
     const errorRate = data.total_requests > 0 ? (errors / data.total_requests * 100).toFixed(2) : 0;
     document.getElementById('val-error').textContent = errorRate + '%';
 
+    // Security Stats
+    const secStats = data.security;
+    const secVal = document.getElementById('val-security');
+    const secCard = document.getElementById('card-security');
+    const secSection = document.getElementById('sec-threats');
+
+    // Get translations for dynamic text
+    const t = translations[currentLang];
+
+    if (secStats && secStats.total_threats > 0) {
+        secVal.textContent = currentLang === 'en' ? `${secStats.total_threats} Threats!` : `${secStats.total_threats}${t.threatCount}`;
+        secVal.style.color = 'var(--accent-danger)';
+        secCard.classList.add('card-danger');
+        secSection.classList.remove('hidden');
+
+        // Populate Threat Table
+        const tbody = document.querySelector('#threatTable tbody');
+        tbody.innerHTML = '';
+        secStats.top_threats.forEach(t => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${t.time}</td>
+                <td><span class="highlight-ip" onclick="openJourneyModal('${t.ip}')">${t.ip}</span></td>
+                <td>${t.type}</td>
+                <td class="risk-${t.risk}">${t.risk}</td>
+                <td title="${t.evidence}">${t.evidence ? (t.evidence.length > 50 ? t.evidence.substring(0, 50) + '...' : t.evidence) : '-'}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+    } else {
+        secVal.textContent = t.safe;
+        secVal.style.color = 'var(--accent-success)';
+        secCard.classList.remove('card-danger');
+        secSection.classList.add('hidden');
+    }
+
     const tables = ['ip', 'path', 'ua', 'ref'];
     tables.forEach(t => document.querySelector(`#${t}Table tbody`).innerHTML = '');
 
@@ -144,7 +262,7 @@ function updateDashboard(data) {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>#${index + 1}</td>
-            <td id="ip-cell-${index}">${item[0]} <button class="dns-btn" onclick="lookupOne('${item[0]}', ${index})"><i class="fa-solid fa-magnifying-glass"></i></button></td>
+            <td id="ip-cell-${index}"><span class="highlight-ip" onclick="openJourneyModal('${item[0]}')">${item[0]}</span> <button class="dns-btn" onclick="lookupOne('${item[0]}', ${index})"><i class="fa-solid fa-magnifying-glass"></i></button></td>
             <td>${item[1].toLocaleString()}</td>
             <td id="dns-res-${index}" style="color: #8b949e; font-size: 0.8rem;">-</td>
         `;
@@ -171,6 +289,106 @@ function updateDashboard(data) {
     });
 
     updateCharts(data);
+    if (data.security && data.security.total_threats > 0) {
+        updateThreatChart(data.security);
+    }
+}
+
+let threatChartInstance = null;
+
+function updateThreatChart(secData) {
+    const ctx = document.getElementById('threatChart').getContext('2d');
+    const types = Object.keys(secData.stats);
+    const counts = Object.values(secData.stats);
+
+    // Danger colors
+    const colors = ['#f85149', '#e3b341', '#a371f7', '#d2a8ff', '#ff7b72'];
+
+    if (threatChartInstance) threatChartInstance.destroy();
+
+    threatChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: types,
+            datasets: [{
+                data: counts,
+                backgroundColor: colors,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right', labels: { color: '#e6edf3' } }
+            }
+        }
+    });
+}
+
+
+// ... updateCharts ... (keep as is)
+
+// User Journey Modal Logic
+async function openJourneyModal(ip) {
+    const modal = document.getElementById('journeyModal');
+    const titleIp = document.getElementById('journey-ip');
+    const tbody = document.querySelector('#journeyTable tbody');
+    const path = document.getElementById('logPath').value;
+
+    titleIp.textContent = ip;
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
+    modal.classList.remove('hidden');
+
+    try {
+        const response = await fetch('/api/ip_history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filepath: path, ip: ip })
+        });
+        const data = await response.json();
+
+        tbody.innerHTML = '';
+        if (data.history && data.history.length > 0) {
+            data.history.forEach(item => {
+                const row = document.createElement('tr');
+                // Parse simplified request: "GET /foo HTTP/1.1" -> "GET /foo"
+                let methodPath = item.request;
+                try { methodPath = item.request.split(' ').slice(0, 2).join(' '); } catch (e) { }
+
+                // Status Color
+                let stClass = '';
+                if (item.status >= 400 && item.status < 500) stClass = 'status-4xx';
+                else if (item.status >= 500) stClass = 'status-5xx';
+                else if (item.status >= 200 && item.status < 300) stClass = 'status-2xx';
+
+                row.innerHTML = `
+                    <td style="font-size:0.8rem">${item.time}</td>
+                    <td title="${item.request}">${methodPath}</td>
+                    <td class="${stClass}">${item.status}</td>
+                    <td style="font-size:0.75rem; color:#888;">${item.referer === '-' ? '(Direct)' : item.referer.substring(0, 30) + '...'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No history found.</td></tr>';
+        }
+
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Error fetching history</td></tr>';
+    }
+}
+
+function closeJourneyModal() {
+    document.getElementById('journeyModal').classList.add('hidden');
+}
+
+// Make sure close modal when clicking outside
+window.onclick = function (event) {
+    const m1 = document.getElementById('fileBrowser');
+    const m2 = document.getElementById('journeyModal');
+    if (event.target == m1) m1.classList.add('hidden');
+    if (event.target == m2) m2.classList.add('hidden');
 }
 
 function updateCharts(data) {

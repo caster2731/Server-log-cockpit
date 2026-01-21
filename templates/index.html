@@ -47,6 +47,14 @@
 
                 <div class="input-group">
                     <input type="text" id="logPath" placeholder="D:/path/to/access.log">
+
+                    <!-- Date Filter -->
+                    <div class="date-group">
+                        <input type="datetime-local" id="dateStart" class="date-input">
+                        <span style="color:#888">-</span>
+                        <input type="datetime-local" id="dateEnd" class="date-input">
+                    </div>
+
                     <button class="file-btn" onclick="openFileBrowser()"><i
                             class="fa-regular fa-folder-open"></i></button>
                     <button id="analyzeBtn" onclick="startAnalysis()">
@@ -105,7 +113,78 @@
                         <p class="value" id="val-error">-</p>
                     </div>
                 </div>
+                <div class="card stat-card" id="card-security">
+                    <div class="icon"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div class="info">
+                        <h3 id="h-security">Security Threats</h3>
+                        <p class="value" id="val-security" style="color: var(--accent-success)">Safe</p>
+                    </div>
+                </div>
             </section>
+
+            <!-- Security Threat Log (Hidden by default unless threats found) -->
+            <section id="sec-threats" class="lists-grid hidden" style="margin-bottom: 30px;">
+                <div class="card list-card" style="border-color: var(--accent-danger);">
+                    <h3 style="color: var(--accent-danger)">
+                        <i class="fa-solid fa-triangle-exclamation"></i> <span id="t-threats">Detected Threats</span>
+                    </h3>
+                    <div class="table-wrapper">
+                        <table id="threatTable">
+                            <thead>
+                                <tr>
+                                    <th id="th-t-time">Time</th>
+                                    <th id="th-t-ip">IP</th>
+                                    <th id="th-t-type">Type</th>
+                                    <th id="th-t-risk">Risk</th>
+                                    <th id="th-t-evidence">Evidence</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Threat Visualization -->
+                <div class="card chart-card" style="border-color: var(--accent-danger); height: 500px;">
+                    <h3 style="color: var(--accent-danger)">
+                        <i class="fa-solid fa-chart-pie"></i> <span id="t-threat-dist">Threat Distribution</span>
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="threatChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Row -->
+            <section class="charts-grid">
+                <!-- ... charts ... -->
+            </section>
+
+            <!-- ... -->
+
+            <!-- User Journey Modal -->
+            <div id="journeyModal" class="modal hidden">
+                <div class="modal-content wide-modal">
+                    <div class="modal-header">
+                        <h3><i class="fa-solid fa-shoe-prints"></i> <span id="t-journey">User Journey</span>: <span
+                                id="journey-ip" class="highlight"></span></h3>
+                        <span class="close" onclick="closeJourneyModal()">&times;</span>
+                    </div>
+                    <div class="journey-body">
+                        <table id="journeyTable">
+                            <thead>
+                                <tr>
+                                    <th id="th-j-time">Time</th>
+                                    <th id="th-j-method">Method/Path</th>
+                                    <th id="th-j-status">Status</th>
+                                    <th id="th-j-ref">Ref/UA</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
             <!-- Charts Row -->
             <section class="charts-grid">
@@ -221,6 +300,30 @@
             </div>
             <div id="fileList" class="file-list">
                 <!-- Populated via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- User Journey Modal -->
+    <div id="journeyModal" class="modal hidden">
+        <div class="modal-content wide-modal">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-shoe-prints"></i> <span id="t-journey">User Journey</span>: <span
+                        id="journey-ip" class="highlight"></span></h3>
+                <span class="close" onclick="closeJourneyModal()">&times;</span>
+            </div>
+            <div class="journey-body">
+                <table id="journeyTable">
+                    <thead>
+                        <tr>
+                            <th id="th-j-time">Time</th>
+                            <th id="th-j-method">Method/Path</th>
+                            <th id="th-j-status">Status</th>
+                            <th id="th-j-ref">Ref/UA</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
     </div>

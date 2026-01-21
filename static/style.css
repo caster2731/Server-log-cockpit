@@ -544,3 +544,68 @@ tr:hover td {
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
 }
+/* Date Inputs */
+.date-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-right: 10px;
+}
+
+.date-input {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--card-border);
+    color: var(--text-secondary);
+    padding: 8px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color-scheme: dark; /* Dark calendar picker */
+}
+
+/* Wide Modal */
+.wide-modal {
+    width: 90%;
+    max-width: 1000px;
+}
+
+/* Journey Table */
+.journey-body {
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+#journeyTable th {
+    top: -20px; /* Adjust for padding */
+}
+
+/* Threat Table */
+#threatTable th {
+    color: var(--accent-danger);
+}
+
+.risk-High {
+    color: var(--accent-danger);
+    font-weight: bold;
+}
+
+.risk-Medium {
+    color: #e3b341;
+}
+
+.card-danger {
+    border-color: var(--accent-danger);
+    background: rgba(248, 81, 73, 0.1);
+}
+
+.highlight-ip {
+    cursor: pointer;
+    color: var(--accent-primary);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+.highlight-ip:hover {
+    color: white;
+}
+

@@ -18,6 +18,20 @@ def parse_log_line(line):
         data = match.groupdict()
         data['status'] = int(data['status'])
         data['bytes'] = int(data['bytes'])
+        
+        # Parse timestamp
+        # Format: 21/Jan/2026:13:14:04 +0900
+        try:
+            # Removing the brackets first if they are captured in the group, 
+            # but regex group 'time' is inside brackets: \[(?P<time>.*?)\]
+            # So data['time'] is like "21/Jan/2026:13:14:04 +0900"
+            dt = datetime.datetime.strptime(data['time'], '%d/%b/%Y:%H:%M:%S %z')
+            data['datetime_obj'] = dt
+            data['timestamp'] = dt.timestamp()
+        except ValueError:
+            data['datetime_obj'] = None
+            data['timestamp'] = 0
+            
         return data
     return None
 

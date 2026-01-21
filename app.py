@@ -18,11 +18,47 @@ def analyze():
     data = request.json
     logfile_path = data.get('filepath')
     filter_bots = data.get('filter_bots', False)
+    
+    # Date Filtering
+    import datetime
+    start_date = None
+    end_date = None
+    
+    if data.get('start_date'):
+        try:
+            # Expected format from UI: "2026-01-21T14:30" (datetime-local value)
+            start_date = datetime.datetime.strptime(data.get('start_date'), '%Y-%m-%dT%H:%M')
+            # Add timezone info (naive assumption for local log)
+            # Ideally we handle timezone, but simple comparison is enough for now 
+            # or converting naive to aware if parsed logs are aware.
+            # Log parser uses '%z' so it produces aware datetime.
+            # We must make this aware or naive. Nginx logs usually have +0900.
+            # Let's assume matches local machine or handle naive comparison inside analyzer.
+            # Actually, Python 3 doesn't let you compare offset-naive and offset-aware.
+            # Let's force naive for parser or aware for everything.
+            # Since parser gets "+0900", it is aware.
+            # We should make this aware too if possible, but we don't know the offset easily here.
+            # Strategy: Convert parsing to naive (remove tz) OR give this a dummy tz.
+            # Let's try to add local system timezone or just +0900 (JST) hardcoded for this user context?
+            # Or better: remove tzinfo from parsed logs for comparison? No, time zones matter.
+            # Let's add a fixed timezone (JST) since user is in Japan (logs seem to be +0900).
+            jst = datetime.timezone(datetime.timedelta(hours=9))
+            start_date = start_date.replace(tzinfo=jst)
+        except Exception: 
+            pass # invalid date, ignore
+
+    if data.get('end_date'):
+        try:
+            end_date = datetime.datetime.strptime(data.get('end_date'), '%Y-%m-%dT%H:%M')
+            jst = datetime.timezone(datetime.timedelta(hours=9))
+            end_date = end_date.replace(tzinfo=jst)
+        except Exception:
+            pass
 
     if not logfile_path or not os.path.exists(logfile_path):
         return jsonify({'error': 'File not found'}), 404
 
-    analyzer = LogAnalyzer(filter_bots=filter_bots)
+    analyzer = LogAnalyzer(filter_bots=filter_bots, start_date=start_date, end_date=end_date)
     
     try:
         with open(logfile_path, 'r', encoding='utf-8') as f:
@@ -36,6 +72,34 @@ def analyze():
         return jsonify({'error': str(e)}), 500
 
     return jsonify(analyzer.get_statistics())
+
+@app.route('/api/ip_history', methods=['POST'])
+def ip_history():
+    data = request.json
+    logfile_path = data.get('filepath')
+    target_ip = data.get('ip')
+    
+    if not logfile_path or not os.path.exists(logfile_path):
+        return jsonify({'error': 'File not found'}), 404
+
+    history = []
+    
+    try:
+        with open(logfile_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                record = parse_log_line(line)
+                if record and record['ip'] == target_ip:
+                     history.append({
+                         'time': record['time'],
+                         'request': record['request'],
+                         'status': record['status'],
+                         'user_agent': record['user_agent'],
+                         'referer': record['referer']
+                     })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+        
+    return jsonify({'ip': target_ip, 'history': history})
 
 @app.route('/api/tail', methods=['POST'])
 def tail():
